@@ -1,6 +1,6 @@
 {
   "name": "suggestion-cliquable",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Propose le prochain message dans un bouton au-dessus de la zone de saisie : un clic le colle, sans l'envoyer. Sans suggestion de l'application, le mod en crée une avec Haiku.",
   "types": "./types/index.d.ts"
 }

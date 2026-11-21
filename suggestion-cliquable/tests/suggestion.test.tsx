@@ -113,19 +113,15 @@ test("quand l'application transmet sa suggestion, le mod ne devine rien", async 
   expect(demandes).toEqual([])
 })
 
-test('Masquer retire la bande sans rien coller', async ($, on) => {
-  const filled: string[] = []
+test('la suggestion cliquable se termine par « > »', async ($, on) => {
   on('prompt.suggest', () => ({ isShown: true }))
-  on('prompt.fill', (_, e) => {
-    filled.push(e.text)
-
-    return { isFilled: true, text: e.text, cursor: e.text.length }
-  })
 
   await $.prompt.suggest({ text: 'Résume le rapport', origin: { kind: 'suggestion' } })
-  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  await ui.press({ key: 'masquer' })
-  expect(await ui.find({ key: 'coller' })).toBeUndefined()
-  expect(filled).toEqual([])
-  await ui.unmount()
+
+  for (const surface of ['desktop', 'mobile', 'terminal'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    const bouton = await ui.find({ key: 'coller' })
+    expect(bouton?.props.label).toBe('Résume le rapport >')
+    await ui.unmount()
+  }
 })

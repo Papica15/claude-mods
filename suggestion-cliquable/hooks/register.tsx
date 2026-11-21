@@ -124,25 +124,19 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Button } = $.ui.resolve(e)
 
+    // La suggestion elle-même, terminée par « > » : un toucher la colle.
     return (
       <Box>
-        <Text dimColor>Suggestion : </Text>
         <Button
           key="coller"
           variant="primary"
-          label={`Coller « ${resume(texte)} »`}
+          label={`${resume(texte)} >`}
           onPress={async () => {
             await $.prompt.fill({ text: texte, mode: 'insert' })
             await update($, suggestion, () => null)
           }}
-        />
-        <Button
-          key="masquer"
-          role="dismiss"
-          label="Masquer"
-          onPress={() => update($, suggestion, () => null)}
         />
       </Box>
     )
