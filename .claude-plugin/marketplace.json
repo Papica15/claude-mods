@@ -1,11 +1,13 @@
 {
   "name": "claude-mods",
-  "owner": { "name": "Papica15" },
+  "owner": {
+    "name": "Papica15"
+  },
   "plugins": [
     {
       "name": "suggestion-cliquable",
       "source": "./suggestion-cliquable",
-      "description": "Affiche la suggestion automatique de l'application dans un bouton au-dessus de la zone de saisie : un clic la colle, sans l'envoyer."
+      "description": "Propose le prochain message dans un bouton au-dessus de la zone de saisie : un clic le colle, sans l'envoyer. Sans suggestion de l'application, le mod en crée une avec Haiku."
     }
   ]
 }

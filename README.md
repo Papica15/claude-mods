@@ -4,7 +4,9 @@ Mods pour Claude Code.
 
 ## suggestion-cliquable
 
-Affiche la suggestion automatique de l'application Claude dans un bouton au-dessus de la zone de saisie. Un clic colle le texte complet de la suggestion dans la zone de saisie, sans l'envoyer : il reste modifiable avant l'envoi. Le bouton « Masquer » retire la bande, qui disparaît aussi dès qu'un message est envoyé. Fonctionne dans l'application Claude sur ordinateur et sur mobile, ainsi que dans le terminal.
+Propose un prochain message dans un bouton au-dessus de la zone de saisie. Un clic colle le texte complet dans la zone de saisie, sans l'envoyer : il reste modifiable avant l'envoi. Le bouton « Masquer » retire la bande, qui disparaît aussi dès qu'un message est envoyé.
+
+Dans le terminal, le bouton reprend la suggestion automatique de l'application. Dans les sessions dans le nuage suivies depuis l'application Claude (ordinateur ou mobile), cette suggestion ne parvient pas aux mods : à la fin de chaque réponse de Claude, le mod en crée donc une lui-même avec le modèle Haiku, ce qui ajoute un petit coût à chaque réponse.
 
 ### Installation
 
@@ -23,3 +25,5 @@ claude plugin install suggestion-cliquable --marketplace Papica15/claude-mods
 ```
 
 Dans l'application Claude sur ordinateur : cliquer sur + à côté de la zone de saisie, puis Plugins, ajouter le catalogue `Papica15/claude-mods`, puis ajouter le plugin `suggestion-cliquable`.
+
+Pour les sessions dans le nuage : ajouter la commande `claude plugin install suggestion-cliquable --marketplace Papica15/claude-mods || true` au script de configuration de l'environnement. Elle s'exécute au démarrage de chaque nouvelle session.
