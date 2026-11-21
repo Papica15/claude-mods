@@ -7,7 +7,7 @@
     {
       "name": "suggestion-cliquable",
       "source": "./suggestion-cliquable",
-      "description": "Propose le prochain message dans un bouton au-dessus de la zone de saisie : un clic le colle, sans l'envoyer. Sans suggestion de l'application, le mod en crée une avec Haiku."
+      "description": "À la fin de chaque réponse de Claude, écrit une suggestion de prochain message dans la zone de saisie : tu l'envoies telle quelle ou tu l'effaces. Sans suggestion de l'application, le mod en crée une avec Haiku."
     }
   ]
 }

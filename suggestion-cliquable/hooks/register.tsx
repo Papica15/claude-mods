@@ -1,17 +1,17 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-// Suggestion affichée dans la bande, ou null quand il n'y en a pas.
-const suggestion = atom({ plugin: 'suggestion-cliquable', key: 'texte' } as const, null)
-// Vrai dès que l'application transmet ses propres suggestions (terminal) :
-// le mod n'a alors rien à deviner.
+// Vrai dès que l'application transmet ses propres suggestions (terminal) : elle
+// les montre alors elle-même dans la zone de saisie, et le mod n'a rien à faire.
 const viaApplication = atom({ plugin: 'suggestion-cliquable', key: 'application' } as const, false)
 // Dernier message écrit par la personne, pour donner le contexte au modèle.
 const dernierMessage = atom({ plugin: 'suggestion-cliquable', key: 'dernier' } as const, '')
 // Augmente à chaque message envoyé : une suggestion arrivée trop tard est ignorée.
 const tour = atom({ plugin: 'suggestion-cliquable', key: 'tour' } as const, 0)
+// Vrai quand le tour en cours vient d'un message système et non de la personne :
+// le mod n'écrit rien après, pour ne pas empiler deux suggestions.
+const tourSysteme = atom({ plugin: 'suggestion-cliquable', key: 'systeme' } as const, false)
 
-const LONGUEUR_MAX = 80
 const EXTRAIT_MAX = 4000
 
 // Dans une session dans le nuage, la suggestion de l'application ne passe pas
@@ -21,12 +21,6 @@ const CONSIGNE = [
   "Réponds uniquement par ce message, tel qu'elle l'écrirait : une seule phrase courte",
   '(15 mots au plus), dans la langue de la personne, sans guillemets ni explication.',
 ].join(' ')
-
-// Version courte, sur une ligne, pour l'étiquette du bouton ; le clic colle le texte entier.
-const resume = (texte: string): string => {
-  const ligne = texte.replace(/\s+/g, ' ').trim()
-  return ligne.length > LONGUEUR_MAX ? `${ligne.slice(0, LONGUEUR_MAX - 1)}…` : ligne
-}
 
 const extrait = (texte: string): string =>
   texte.length > EXTRAIT_MAX ? texte.slice(-EXTRAIT_MAX) : texte
@@ -40,33 +34,25 @@ const nettoie = (texte: string): string =>
 export const register: Register = on => {
   // La suggestion de l'application, quand elle arrive jusqu'au mod (terminal).
   on('prompt.suggest', async ($, e, next) => {
-    const result = await next(e)
-
     if (e.origin.kind === 'suggestion') {
       await update($, viaApplication, () => true).catch(() => undefined)
     }
 
-    if (e.text.trim() !== '') {
-      await update($, suggestion, () => e.text).catch(() => undefined)
-    }
-
-    return result
+    return next(e)
   })
 
-  // Un message envoyé rend la suggestion périmée : la bande disparaît jusqu'à la suivante.
   on('prompt.submit', ($, e, next) => {
     void update($, tour, n => n + 1).catch(() => undefined)
+    void update($, tourSysteme, () => e.isMeta === true).catch(() => undefined)
 
     if (e.isMeta !== true) {
       void update($, dernierMessage, () => e.text).catch(() => undefined)
     }
 
-    void update($, suggestion, () => null).catch(() => undefined)
-
     return next(e)
   })
 
-  // À la fin d'une réponse de Claude, le mod devine le prochain message.
+  // À la fin d'une réponse de Claude, le mod écrit sa suggestion dans la zone de saisie.
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
 
@@ -77,7 +63,7 @@ export const register: Register = on => {
     const answer = e.answer
 
     void (async () => {
-      if (await read($, viaApplication)) {
+      if ((await read($, viaApplication)) || (await read($, tourSysteme))) {
         return
       }
 
@@ -108,37 +94,14 @@ export const register: Register = on => {
 
       const texte = nettoie(reponse.text)
 
-      if (texte !== '') {
-        await update($, suggestion, () => texte)
-        $.ui.log('suggestion créée', { to: 'debug' })
+      if (texte === '') {
+        return
       }
+
+      const ecrit = await $.prompt.fill({ text: texte, mode: 'insert' })
+      $.ui.log(`suggestion écrite : ${ecrit.isFilled}`, { to: 'debug' })
     })().catch(() => undefined)
 
     return result
-  })
-
-  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const texte = await read($, suggestion)
-
-    if (e.props.hasSurvey || texte === null) {
-      return next(e)
-    }
-
-    const { Box, Button } = $.ui.resolve(e)
-
-    // La suggestion elle-même, terminée par « > » : un toucher la colle.
-    return (
-      <Box>
-        <Button
-          key="coller"
-          variant="primary"
-          label={`${resume(texte)} >`}
-          onPress={async () => {
-            await $.prompt.fill({ text: texte, mode: 'insert' })
-            await update($, suggestion, () => null)
-          }}
-        />
-      </Box>
-    )
   })
 }

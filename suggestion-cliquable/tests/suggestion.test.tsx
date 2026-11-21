@@ -1,45 +1,4 @@
-import { expect, test } from 'claude-code/testing'
-
-const BAND = {
-  plugin: 'suggestion-cliquable',
-  component: 'AbovePrompt',
-  props: {
-    hasSurvey: false,
-    isCollapsed: false,
-    isWorking: false,
-    maxRows: 6,
-    bodyColumns: 80,
-    scroll: { offset: 0, bodyRows: 6 },
-    view: {},
-  },
-} as const
-
-test('la suggestion devient un bouton qui la colle dans la zone de saisie', async ($, on) => {
-  const filled: string[] = []
-  on('prompt.suggest', () => ({ isShown: true }))
-  on('prompt.fill', (_, e) => {
-    filled.push(e.text)
-
-    return { isFilled: true, text: e.text, cursor: e.text.length }
-  })
-
-  for (const surface of ['desktop', 'mobile', 'terminal'] as const) {
-    await $.prompt.suggest({ text: 'Lance les tests', origin: { kind: 'suggestion' } })
-    const ui = await $.ui.mount({ ...BAND, surface })
-    expect(await ui.find({ key: 'coller' })).toBeDefined()
-    await ui.press({ key: 'coller' })
-    expect(await ui.find({ key: 'coller' })).toBeUndefined()
-    await ui.unmount()
-  }
-
-  expect(filled).toEqual(['Lance les tests', 'Lance les tests', 'Lance les tests'])
-})
-
-test('sans suggestion, aucune bande', async $ => {
-  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Button' })).toBeUndefined()
-  await ui.unmount()
-})
+import { expect, mock, test } from 'claude-code/testing'
 
 const USAGE = {
   input_tokens: 1,
@@ -56,9 +15,10 @@ const FIN_DE_REPONSE = {
   reason: 'answer',
 } as const
 
-test("sans suggestion de l'application, le mod en devine une à la fin d'une réponse", async ($, on) => {
-  const filled: string[] = []
+test("à la fin d'une réponse, le mod écrit sa suggestion dans la zone de saisie", async ($, on) => {
+  const horloge = mock.clock(on)
   const demandes: string[] = []
+  const ecrits: string[] = []
   on('turn.complete', (_, e) => ({ text: e.answer }))
   on('model.complete', (_, e) => {
     demandes.push(e.model)
@@ -66,35 +26,22 @@ test("sans suggestion de l'application, le mod en devine une à la fin d'une ré
     return { value: { isAnswered: true, text: '« Lance les tests »', usage: USAGE } }
   })
   on('prompt.fill', (_, e) => {
-    filled.push(e.text)
+    ecrits.push(`${e.mode}:${e.text}`)
 
     return { isFilled: true, text: e.text, cursor: e.text.length }
   })
 
   await $.turn.complete(FIN_DE_REPONSE)
-
-  for (const surface of ['desktop', 'mobile', 'terminal'] as const) {
-    const ui = await $.ui.mount({ ...BAND, surface })
-    let bouton = await ui.find({ key: 'coller' })
-
-    for (let essai = 0; bouton === undefined && essai < 50; essai += 1) {
-      bouton = await ui.find({ key: 'coller' })
-    }
-
-    expect(bouton).toBeDefined()
-    await ui.unmount()
-  }
-
-  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  await ui.press({ key: 'coller' })
-  await ui.unmount()
+  await horloge.settle()
 
   expect(demandes).toEqual(['haiku'])
-  expect(filled).toEqual(['Lance les tests'])
+  expect(ecrits).toEqual(['insert:Lance les tests'])
 })
 
-test("quand l'application transmet sa suggestion, le mod ne devine rien", async ($, on) => {
+test("quand l'application transmet sa suggestion, le mod n'écrit rien", async ($, on) => {
+  const horloge = mock.clock(on)
   const demandes: string[] = []
+  const ecrits: string[] = []
   on('turn.complete', (_, e) => ({ text: e.answer }))
   on('prompt.suggest', () => ({ isShown: true }))
   on('model.complete', (_, e) => {
@@ -102,26 +49,35 @@ test("quand l'application transmet sa suggestion, le mod ne devine rien", async 
 
     return { value: { isAnswered: true, text: 'Autre chose', usage: USAGE } }
   })
+  on('prompt.fill', (_, e) => {
+    ecrits.push(e.text)
+
+    return { isFilled: true, text: e.text, cursor: e.text.length }
+  })
 
   await $.prompt.suggest({ text: 'Lance les tests', origin: { kind: 'suggestion' } })
   await $.turn.complete(FIN_DE_REPONSE)
-
-  for (let essai = 0; essai < 50; essai += 1) {
-    await Promise.resolve()
-  }
+  await horloge.settle()
 
   expect(demandes).toEqual([])
+  expect(ecrits).toEqual([])
 })
 
-test('la suggestion cliquable se termine par « > »', async ($, on) => {
-  on('prompt.suggest', () => ({ isShown: true }))
+test("sans réponse du modèle, rien n'est écrit", async ($, on) => {
+  const horloge = mock.clock(on)
+  const ecrits: string[] = []
+  on('turn.complete', (_, e) => ({ text: e.answer }))
+  on('model.complete', () => ({
+    value: { isAnswered: false, reason: 'empty-reply', usage: USAGE },
+  }))
+  on('prompt.fill', (_, e) => {
+    ecrits.push(e.text)
 
-  await $.prompt.suggest({ text: 'Résume le rapport', origin: { kind: 'suggestion' } })
+    return { isFilled: true, text: e.text, cursor: e.text.length }
+  })
 
-  for (const surface of ['desktop', 'mobile', 'terminal'] as const) {
-    const ui = await $.ui.mount({ ...BAND, surface })
-    const bouton = await ui.find({ key: 'coller' })
-    expect(bouton?.props.label).toBe('Résume le rapport >')
-    await ui.unmount()
-  }
+  await $.turn.complete(FIN_DE_REPONSE)
+  await horloge.settle()
+
+  expect(ecrits).toEqual([])
 })
