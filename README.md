@@ -4,11 +4,9 @@ Mods pour Claude Code.
 
 ## suggestion-cliquable
 
-À la fin de chaque réponse de Claude, écrit une suggestion de prochain message directement dans la zone de saisie : il suffit de l'envoyer telle quelle, de la modifier ou de l'effacer. Si tu as commencé à écrire pendant la réponse, la suggestion s'ajoute à ton texte.
+Laisse l'application afficher sa propre suggestion grise dans la zone de saisie, sans la modifier : le mod n'écrit aucune suggestion à sa place.
 
-Dans le terminal, l'application montre déjà sa propre suggestion dans la zone de saisie (Tab pour la prendre) : le mod n'y touche pas. Dans les sessions dans le nuage suivies depuis l'application Claude (ordinateur ou mobile), cette suggestion ne parvient pas aux mods : le mod en crée donc une lui-même avec le modèle Haiku, ce qui ajoute un petit coût à chaque réponse.
-
-Quand l'usage du compte approche de sa limite, l'application cesse de créer sa propre suggestion. Le mod lui demande de continuer (réglage `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION`, posé seulement s'il est absent) : la suggestion reste affichée, au prix d'un appel de plus au modèle à chaque réponse pendant cette période.
+Quand l'usage du compte approche de sa limite, l'application cesse de créer cette suggestion. Le mod lui demande de continuer (réglage `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION`, posé seulement s'il est absent) : la suggestion reste affichée, au prix d'un appel de plus au modèle à chaque réponse pendant cette période.
 
 ### Installation
 
