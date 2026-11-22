@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 // Vrai dès que l'application transmet ses propres suggestions (terminal) : elle
 // les montre alors elle-même dans la zone de saisie, et le mod n'a rien à faire.
@@ -31,6 +31,23 @@ const nettoie = (texte: string): string =>
     .replace(/^[\s"'«»“”]+|[\s"'«»“”]+$/g, '')
     .trim()
 
+// Dans une session dans le nuage, le mod ne peut pas toujours écrire dans la zone de saisie : la
+// suggestion grise qui s'y affiche vient alors de l'application seule. Le moteur cesse de la créer
+// dès que l'usage du compte passe en alerte, sauf si ce réglage lui demande de continuer : installer
+// ce mod, c'est faire ce choix (le README le dit). Un réglage déjà posé, par la personne ou par
+// l'environnement, n'est jamais remplacé. Il disparaît avec le moteur : le mod le repose à chaque
+// message.
+async function reactiverSuggestionApplication($: EngineInterface): Promise<void> {
+  if ((await $.env.get('CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION')) !== undefined) {
+    return
+  }
+
+  const reglage = await $.env.set('CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION', '1')
+  const issue = reglage.deny === undefined ? 'acceptée' : `refusée (${reglage.deny})`
+
+  $.ui.log(`réactivation de la suggestion de l'application : ${issue}`, { to: 'debug' })
+}
+
 export const register: Register = on => {
   // La suggestion de l'application, quand elle arrive jusqu'au mod (terminal).
   on('prompt.suggest', async ($, e, next) => {
@@ -42,6 +59,7 @@ export const register: Register = on => {
   })
 
   on('prompt.submit', ($, e, next) => {
+    void reactiverSuggestionApplication($).catch(() => undefined)
     void update($, tour, n => n + 1).catch(() => undefined)
     void update($, tourSysteme, () => e.isMeta === true).catch(() => undefined)
 

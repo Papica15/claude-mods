@@ -81,3 +81,39 @@ test("sans réponse du modèle, rien n'est écrit", async ($, on) => {
 
   expect(ecrits).toEqual([])
 })
+
+const MESSAGE = { text: 'Bonjour', wait: false, origin: { kind: 'composer' } } as const
+
+test("à chaque message, le mod demande à l'application de continuer à créer sa suggestion", async ($, on) => {
+  const horloge = mock.clock(on)
+  const reglages: string[] = []
+  on('prompt.submit', (_, e) => ({ text: e.text }))
+  on('env.get', () => ({ value: undefined }))
+  on('env.set', (_, e) => {
+    reglages.push(`${e.name}=${e.value}`)
+
+    return { value: {} }
+  })
+
+  await $.prompt.submit(MESSAGE)
+  await horloge.settle()
+
+  expect(reglages).toEqual(['CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=1'])
+})
+
+test("un réglage déjà posé n'est pas remplacé", async ($, on) => {
+  const horloge = mock.clock(on)
+  const reglages: string[] = []
+  on('prompt.submit', (_, e) => ({ text: e.text }))
+  on('env.get', () => ({ value: '0' }))
+  on('env.set', (_, e) => {
+    reglages.push(`${e.name}=${e.value}`)
+
+    return { value: {} }
+  })
+
+  await $.prompt.submit(MESSAGE)
+  await horloge.settle()
+
+  expect(reglages).toEqual([])
+})
