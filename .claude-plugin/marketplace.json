@@ -7,7 +7,7 @@
     {
       "name": "suggestion-cliquable",
       "source": "./suggestion-cliquable",
-      "description": "Garde la suggestion grise de l'application dans la zone de saisie, sans la modifier, même quand l'usage du compte est en alerte."
+      "description": "À la fin de chaque réponse de Claude, écrit une suggestion de prochain message dans la zone de saisie : tu l'envoies telle quelle ou tu l'effaces. Sans suggestion de l'application, le mod en crée une avec Haiku. Il demande aussi à l'application de continuer à créer sa suggestion grise quand l'usage du compte est en alerte."
     }
   ]
 }
